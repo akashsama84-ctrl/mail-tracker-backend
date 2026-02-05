@@ -96,7 +96,7 @@ app.post('/api/send', async (req, res) => {
    return res.json({ success: true, messageId: info.messageId });
   } catch (error) {
     console.error('[ERROR] Failed to send or save email:', error);
-    res.status(500).json({ success: false, error: error.message });
+  return  res.status(500).json({ success: false, error: error.message });
   }
 });
 
