@@ -18,7 +18,9 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 dotenv.config();
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin:"*"
+}));
 app.use(bodyParser.json());
 
 // 1. MongoDB Connection
