@@ -93,7 +93,7 @@ app.post('/api/send', async (req, res) => {
     });
 
     console.log(`[SMTP] Email ${id} sent. MessageID: ${info.messageId}`);
-    res.json({ success: true, messageId: info.messageId });
+   return res.json({ success: true, messageId: info.messageId });
   } catch (error) {
     console.error('[ERROR] Failed to send or save email:', error);
     res.status(500).json({ success: false, error: error.message });
