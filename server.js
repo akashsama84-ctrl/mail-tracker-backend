@@ -15,7 +15,8 @@ const nodemailer = require('nodemailer');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-
+const dotenv = require('dotenv');
+dotenv.config();
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
@@ -50,7 +51,8 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-const BASE_URL = 'http://localhost:5001'; 
+// const BASE_URL = 'http://localhost:5001'; 
+const BASE_URL = 'https://mail-tracker-backend-dbo5.onrender.com'; 
 
 // 4. Email Sending Endpoint
 app.post('/api/send', async (req, res) => {
@@ -170,7 +172,7 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-const PORT = 5001;
+const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log('-----------------------------------------');
   console.log(`VaporMail Backend (MongoDB) running at ${BASE_URL}`);
