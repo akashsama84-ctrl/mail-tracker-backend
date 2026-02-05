@@ -23,6 +23,20 @@ app.use(cors({
 }));
 app.use(bodyParser.json());
 
+const Nodemailer = require("nodemailer");
+const { MailtrapTransport } = require("mailtrap");
+
+const TOKEN = "277e6d7b0497e9bc11159175df52db8e";
+
+const transport = Nodemailer.createTransport(
+  MailtrapTransport({
+    token: TOKEN,
+  })
+);
+
+
+
+
 // 1. MongoDB Connection
 const MONGO_URI = 'mongodb+srv://kambojsama84:bHBB6eCihl9ul7oJ@cluster0.ku5w0.mongodb.net/?appName=Cluster0';
 mongoose.connect(MONGO_URI)
@@ -87,15 +101,25 @@ app.post('/api/send', async (req, res) => {
       </div>
     `;
 
-    const info = await transporter.sendMail({
-      from: '"VaporMail Tracker" <kambojsama84@gmail.com>',
+    // const info = await transporter.sendMail({
+    //   from: '"VaporMail Tracker" <kambojsama84@gmail.com>',
+    //   to: recipients.join(', '),
+    //   subject: subject,
+    //   html: htmlContent,
+    // });
+
+    transport
+  .sendMail({
+  from: '"VaporMail Tracker" <kambojsama84@gmail.com>',
       to: recipients.join(', '),
       subject: subject,
-      html: htmlContent,
-    });
-
-    console.log(`[SMTP] Email ${id} sent. MessageID: ${info.messageId}`);
-   return res.json({ success: true, messageId: info.messageId });
+    text: htmlContent,
+    category: "Integration Test",
+  })
+  .then(console.log, console.error);
+  
+    console.log(`[SMTP] Email ${id} sent. MessageID: `);
+   return res.json({ success: true, messageId:'mail' });
   } catch (error) {
     console.error('[ERROR] Failed to send or save email:', error);
   return  res.status(500).json({ success: false, error: error.message });
