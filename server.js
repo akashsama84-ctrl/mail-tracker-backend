@@ -59,13 +59,13 @@ const emailSchema = new mongoose.Schema({
 const Email = mongoose.model('Email', emailSchema);
 
 // 3. SMTP Configuration
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'kambojsama84@gmail.com',
-    pass: 'fbwp ayrb squa xrlx'
-  }
-});
+// const transporter = nodemailer.createTransport({
+//   service: 'gmail',
+//   auth: {
+//     user: 'kambojsama84@gmail.com',
+//     pass: 'fbwp ayrb squa xrlx'
+//   }
+// });
 
 // const BASE_URL = 'http://localhost:5001'; 
 const BASE_URL = 'https://mail-tracker-backend-dbo5.onrender.com'; 
