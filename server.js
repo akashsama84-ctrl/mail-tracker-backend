@@ -1,47 +1,35 @@
-
 /**
  * VAPORMAIL BACKEND SERVER (Node.js + MongoDB)
  * ---------------------------------
  * Dependencies: express, nodemailer, cors, body-parser, mongoose
- * 
+ *
  * To run:
  * 1. npm install express nodemailer cors body-parser mongoose
  * 2. Ensure MongoDB is running on your machine
  * 3. node server.js
  */
 
-const express = require('express');
-// const nodemailer = require('nodemailer');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
+const express = require("express");
+const nodemailer = require("nodemailer");
+const cors = require("cors");
+const bodyParser = require("body-parser");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
 dotenv.config();
 const app = express();
-app.use(cors({
-  origin:"*"
-}));
+app.use(
+  cors({
+    origin: "*",
+  }),
+);
 app.use(bodyParser.json());
 
-const Nodemailer = require("nodemailer");
-const { MailtrapTransport } = require("mailtrap");
-
-const TOKEN = "8a96000065307f0879941e7e1ad121ca";
-
-const transport = Nodemailer.createTransport(
-  MailtrapTransport({
-    token: TOKEN,
-  })
-);
-
-
-
-
 // 1. MongoDB Connection
-const MONGO_URI = 'mongodb+srv://kambojsama84:bHBB6eCihl9ul7oJ@cluster0.ku5w0.mongodb.net/?appName=Cluster0';
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('Successfully connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+const MONGO_URI = process.env.MONGO_URL;
+mongoose
+  .connect(MONGO_URI)
+  .then(() => console.log("Successfully connected to MongoDB"))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
 // 2. Define Email Schema
 const emailSchema = new mongoose.Schema({
@@ -53,25 +41,25 @@ const emailSchema = new mongoose.Schema({
   clicks: { type: Number, default: 0 },
   sentAt: { type: Date, default: Date.now },
   lastOpenedAt: Date,
-  lastClickedAt: Date
+  lastClickedAt: Date,
 });
 
-const Email = mongoose.model('Email', emailSchema);
+const Email = mongoose.model("Email", emailSchema);
 
 // 3. SMTP Configuration
-// const transporter = nodemailer.createTransport({
-//   service: 'gmail',
-//   auth: {
-//     user: 'kambojsama84@gmail.com',
-//     pass: 'fbwp ayrb squa xrlx'
-//   }
-// });
+const transporter = nodemailer.createTransport({
+  host: "smtp.hostinger.com",
+  auth: {
+    user: process.env.MAIL_ADD,
+    pass: process.env.MAIL_PASS,
+  },
+});
 
-// const BASE_URL = 'http://localhost:5001'; 
-const BASE_URL = 'https://mail-tracker-backend-dbo5.onrender.com'; 
+// const BASE_URL = 'http://localhost:5001';
+const BASE_URL = process.env.BACKEND_URL;
 
 // 4. Email Sending Endpoint
-app.post('/api/send', async (req, res) => {
+app.post("/api/send", async (req, res) => {
   const { id, recipients, subject, body } = req.body;
 
   try {
@@ -80,119 +68,110 @@ app.post('/api/send', async (req, res) => {
       trackingId: id,
       recipients,
       subject,
-      body
+      body,
     });
     await newEmail.save();
 
     // Inject Tracking Pixel
     const trackingPixel = `<img src="${BASE_URL}/api/track/open/${id}" width="1" height="1" style="display:none; opacity:0;" alt="" />`;
-    
-    // Wrap Links for click tracking
-    const trackedBody = body.replace(/href="(https?:\/\/[^"]+)"/g, (match, url) => {
-      return `href="${BASE_URL}/api/track/click/${id}?url=${encodeURIComponent(url)}"`;
-    });
 
-    console.log("URL",trackingPixel)
+    // Wrap Links for click tracking
+    const trackedBody = body.replace(
+      /href="(https?:\/\/[^"]+)"/g,
+      (match, url) => {
+        return `href="${BASE_URL}/api/track/click/${id}?url=${encodeURIComponent(url)}"`;
+      },
+    );
+
+    console.log("URL", trackingPixel);
     const htmlContent = `
       <div style="font-family: sans-serif; line-height: 1.5; color: #333; max-width: 600px; margin: 0 auto;">
         <div style="padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-          ${trackedBody.replace(/\n/g, '<br>')}
+          ${trackedBody.replace(/\n/g, "<br>")}
         </div>
         ${trackingPixel}
       </div>
     `;
 
-    // const info = await transporter.sendMail({
-    //   from: '"VaporMail Tracker" <kambojsama84@gmail.com>',
-    //   to: recipients.join(', '),
-    //   subject: subject,
-    //   html: htmlContent,
-    // });
-
-  const x =   await transport.sendMail({
-     from: {
-  address: "hello@demomailtrap.co",
-  name: "VaporMail Tracker"
-},
-      to: ["kambojsama84@gmail.com"],
+    const info = await transporter.sendMail({
+      from: `"ToolsBin Support" <support@toolsbin.in>`,
+      to: recipients.join(", "),
       subject: subject,
       html: htmlContent,
-      category: "Integration Test",
-  })
-  console.log('x',x)
+    });
     console.log(`[SMTP] Email ${id} sent. MessageID: DONE `);
-   return res.json({ success: true, messageId:'mail' });
+    return res.json({ success: true, messageId: "mail" });
   } catch (error) {
-    console.error('[ERROR] Failed to send or save email:', error);
-  return  res.status(500).json({ success: false, error: error.message });
+    console.error("[ERROR] Failed to send or save email:", error);
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 
 // 5. Tracking Pixel Endpoint (Open Tracking)
-app.get('/api/track/open/:id', async (req, res) => {
+app.get("/api/track/open/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
     // Atomically increment the open count in MongoDB
     const updated = await Email.findOneAndUpdate(
       { trackingId: id },
-      { 
+      {
         $inc: { opens: 1 },
-        $set: { lastOpenedAt: new Date() }
+        $set: { lastOpenedAt: new Date() },
       },
-      { new: true }
+      { new: true },
     );
 
     if (updated) {
       console.log(`[TRACK] Email ${id} opened. Total: ${updated.opens}`);
     }
   } catch (err) {
-    console.error('[ERROR] Failed to track open:', err);
+    console.error("[ERROR] Failed to track open:", err);
   }
 
   // Always return the pixel
   const pixel = Buffer.from(
-    'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
-    'base64'
+    "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+    "base64",
   );
   res.writeHead(200, {
-    'Content-Type': 'image/gif',
-    'Content-Length': pixel.length,
-    'Cache-Control': 'no-cache, no-store, must-revalidate'
+    "Content-Type": "image/gif",
+    "Content-Length": pixel.length,
+    "Cache-Control": "no-cache, no-store, must-revalidate",
   });
   res.end(pixel);
 });
 
 // 6. Link Redirect Endpoint (Click Tracking)
-app.get('/api/track/click/:id', async (req, res) => {
+app.get("/api/track/click/:id", async (req, res) => {
   const { id } = req.params;
   const { url } = req.query;
 
   try {
     const updated = await Email.findOneAndUpdate(
       { trackingId: id },
-      { 
+      {
         $inc: { clicks: 1 },
-        $set: { lastClickedAt: new Date() }
+        $set: { lastClickedAt: new Date() },
       },
-      { new: true }
+      { new: true },
     );
 
     if (updated) {
       console.log(`[TRACK] Link in ${id} clicked. Total: ${updated.clicks}`);
     }
   } catch (err) {
-    console.error('[ERROR] Failed to track click:', err);
+    console.error("[ERROR] Failed to track click:", err);
   }
 
-  res.redirect(url || '/');
+  res.redirect(url || "/");
 });
 
 // 7. Stats Endpoint for Dashboard
-app.get('/api/stats', async (req, res) => {
+app.get("/api/stats", async (req, res) => {
   try {
     const allEmails = await Email.find().sort({ sentAt: -1 });
-    // Transform to the format the frontend expects if necessary, 
+    // Transform to the format the frontend expects if necessary,
     // though the current frontend uses localStorage. This API can now power the UI.
     res.json(allEmails);
   } catch (err) {
@@ -202,8 +181,8 @@ app.get('/api/stats', async (req, res) => {
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
-  console.log('-----------------------------------------');
+  console.log("-----------------------------------------");
   console.log(`VaporMail Backend (MongoDB) running at ${BASE_URL}`);
   console.log(`Database: ${MONGO_URI}`);
-  console.log('-----------------------------------------');
+  console.log("-----------------------------------------");
 });
