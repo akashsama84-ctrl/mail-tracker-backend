@@ -11,7 +11,7 @@
  */
 
 const express = require('express');
-const nodemailer = require('nodemailer');
+// const nodemailer = require('nodemailer');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
@@ -26,7 +26,7 @@ app.use(bodyParser.json());
 const Nodemailer = require("nodemailer");
 const { MailtrapTransport } = require("mailtrap");
 
-const TOKEN = "277e6d7b0497e9bc11159175df52db8e";
+const TOKEN = "8a96000065307f0879941e7e1ad121ca";
 
 const transport = Nodemailer.createTransport(
   MailtrapTransport({
@@ -92,6 +92,7 @@ app.post('/api/send', async (req, res) => {
       return `href="${BASE_URL}/api/track/click/${id}?url=${encodeURIComponent(url)}"`;
     });
 
+    console.log("URL",trackingPixel)
     const htmlContent = `
       <div style="font-family: sans-serif; line-height: 1.5; color: #333; max-width: 600px; margin: 0 auto;">
         <div style="padding: 20px; border: 1px solid #eee; border-radius: 8px;">
@@ -108,17 +109,18 @@ app.post('/api/send', async (req, res) => {
     //   html: htmlContent,
     // });
 
-    transport
-  .sendMail({
-  from: '"VaporMail Tracker" <kambojsama84@gmail.com>',
-      to: recipients.join(', '),
+  const x =   await transport.sendMail({
+     from: {
+  address: "hello@demomailtrap.co",
+  name: "VaporMail Tracker"
+},
+      to: ["kambojsama84@gmail.com"],
       subject: subject,
-    text: htmlContent,
-    category: "Integration Test",
+      html: htmlContent,
+      category: "Integration Test",
   })
-  .then(console.log, console.error);
-  
-    console.log(`[SMTP] Email ${id} sent. MessageID: `);
+  console.log('x',x)
+    console.log(`[SMTP] Email ${id} sent. MessageID: DONE `);
    return res.json({ success: true, messageId:'mail' });
   } catch (error) {
     console.error('[ERROR] Failed to send or save email:', error);
